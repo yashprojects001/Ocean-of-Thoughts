@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ocean of Thoughts</title>
+<style>
+  :root{
+    --bg1:#00111a;
+    --bg2:#00283d;
+    --panel:rgba(5, 20, 35, 0.72);
+    --text:#f4fbff;
+    --muted:rgba(244,251,255,0.72);
+    --line:rgba(255,255,255,0.08);
+    --accent:#4cc9f0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 20% 10%, rgba(76,201,240,0.18), transparent 30%),
+                linear-gradient(180deg, var(--bg1), var(--bg2));
+    color: var(--text);
+  }
+
+  #ocean {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
+  }
+
+  .ui {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .topbar {
+    pointer-events: auto;
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.28);
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    letter-spacing: 0.2px;
+  }
+
+  .brand p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .controls {
+    pointer-events: auto;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  input, select, button {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    outline: none;
+    font: inherit;
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  input {
+    width: min(360px, 54vw);
+    padding: 11px 14px;
+  }
+
+  select {
+    padding: 11px 14px;
+    cursor: pointer;
+  }
+
+  button {
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+  }
+
+  button:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.12);
+  }
+
+  button:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .stats {
+    pointer-events: auto;
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    display: grid;
+    gap: 8px;
+    min-width: 240px;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+  }
+
+  .stats .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .hint {
+    pointer-events: auto;
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    max-width: 360px;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    color: var(--muted);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .bubble {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 50%;
+    padding: 14px;
+    user-select: none;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .bubble .text {
+    font-size: 0.92rem;
+    line-height: 1.35;
+    color: white;
+    max-width: 92%;
+    word-break: break-word;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    opacity: 0.98;
+  }
+
+  .bubble.hidden-text .text {
+    opacity: 0;
+  }
+
+  .bubble.revealed {
+    transform: scale(1.2);
+    box-shadow: inset 0 0 30px rgba(255,255,255,0.12), 0 18px 40px rgba(0,0,0,0.24);
+  }
+
+  .bubble.frozen {
+    cursor: default;
+    border-style: dashed;
+  }
+
+  .bubble .tag {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 0.65rem;
+    opacity: 0.7;
+    letter-spacing: 0.04em;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.25s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .pulse {
+    animation: pulse 3.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.12); }
+  }
+
+  .small {
+    font-size: 0.82rem;
+    opacity: 0.82;
+  }
+
+  @media (max-width: 700px) {
+    .topbar {
+      gap: 10px;
+    }
+    input {
+      width: 100%;
+    }
+    .controls {
+      width: 100%;
+    }
+    .stats, .hint {
+      max-width: calc(100vw - 32px);
+      right: 16px;
+      left: 16px;
+    }
+    .hint {
+      bottom: 126px;
+    }
+  }
+</style>
+</head>
+<body>
+<canvas id="ocean"></canvas>
+
+<div class="ui">
+  <div class="topbar">
+    <div class="brand">
+      <h1>🌊 Ocean of Thoughts</h1>
+      <p>Type a thought. Watch it drift. Click to reveal what floats below.</p>
+    </div>
+
+    <div class="controls">
+      <input id="thoughtInput" type="text" placeholder="Type a thought..." maxlength="120" />
+      <select id="moodSelect">
+        <option value="calm">Calm</option>
+        <option value="deep">Deep</option>
+        <option value="storm">Storm</option>
+        <option value="dream">Dream</option>
+      </select>
+      <button id="addBtn">Add Thought</button>
+      <button id="autoBtn">Auto Thought</button>
+      <button id="clearBtn">Clear All</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="row"><span>Total thoughts</span><strong id="totalCount">0</strong></div>
+    <div class="row"><span>Revealed</span><strong id="revealedCount">0</strong></div>
+    <div class="row"><span>Hidden</span><strong id="hiddenCount">0</strong></div>
+    <div class="row"><span>Current mood</span><strong id="currentMood">Calm</strong></div>
+  </div>
+
+  <div class="hint">
+    <div><strong>How it works:</strong></div>
+    <div>• Click a bubble to reveal or hide its thought.</div>
+    <div>• Double-click to freeze a bubble in place.</div>
+    <div>• Thoughts are saved, so they return after refresh.</div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("ocean");
+  const ctx = canvas.getContext("2d");
+
+  const input = document.getElementById("thoughtInput");
+  const moodSelect = document.getElementById("moodSelect");
+  const addBtn = document.getElementById("addBtn");
+  const autoBtn = document.getElementById("autoBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  const totalCount = document.getElementById("totalCount");
+  const revealedCount = document.getElementById("revealedCount");
+  const hiddenCount = document.getElementById("hiddenCount");
+  const currentMood = document.getElementById("currentMood");
+
+  let w = 0;
+  let h = 0;
+  let dpr = 1;
+
+  const storageKey = "ocean_of_thoughts_v2";
+  const moodKey = "ocean_of_thoughts_mood";
+  let bubbles = [];
+  let stars = [];
+  let waveOffset = 0;
+
+  const autoThoughts = [
+    "I should breathe more slowly.",
+    "Some thoughts keep returning at night.",
+    "The sea is quiet, but my mind is not.",
+    "I am still becoming who I need to be.",
+    "Not every wave is a problem.",
+    "I can let this thought drift away.",
+    "Maybe the answer is deeper than this.",
+    "I want more peace in my head.",
+    "The tide changes, and so do I.",
+    "My thoughts do not have to stay forever."
+  ];
+
+  const moodThemes = {
+    calm:   { bg1: "#00111a", bg2: "#00283d", bubble: ["#4cc9f0", "#7bdff2", "#9bf6ff"] },
+    deep:   { bg1: "#020617", bg2: "#0f172a", bubble: ["#8b5cf6", "#4cc9f0", "#60a5fa"] },
+    storm:  { bg1: "#0f172a", bg2: "#1e293b", bubble: ["#fb7185", "#f59e0b", "#38bdf8"] },
+    dream:  { bg1: "#1a0933", bg2: "#3b0764", bubble: ["#f472b6", "#c084fc", "#67e8f9"] }
+  };
+
+  function resize() {
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    w = canvas.width = Math.floor(window.innerWidth * dpr);
+    h = canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+
+    if (!stars.length) {
+      stars = Array.from({ length: 80 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: (Math.random() * 1.6 + 0.4) * dpr,
+        a: Math.random() * 0.7 + 0.15,
+        v: (Math.random() * 0.15 + 0.03) * dpr
+      }));
+    }
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  function saveState() {
+    const data = bubbles.map(b => ({
+      id: b.id,
+      text: b.text,
+      x: b.x,
+      y: b.y,
+      r: b.r,
+      vx: b.vx,
+      vy: b.vy,
+      revealed: b.revealed,
+      frozen: b.frozen,
+      color: b.color,
+      mood: b.mood
+    }));
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    localStorage.setItem(moodKey, moodSelect.value);
+    updateStats();
+  }
+
+  function loadState() {
+    const savedMood = localStorage.getItem(moodKey);
+    if (savedMood && moodThemes[savedMood]) {
+      moodSelect.value = savedMood;
+    }
+
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw);
+      saved.forEach(item => {
+        createBubble(item.text, {
+          x: item.x,
+          y: item.y,
+          r: item.r,
+          vx: item.vx,
+          vy: item.vy,
+          revealed: item.revealed,
+          frozen: item.frozen,
+          color: item.color,
+          mood: item.mood,
+          skipSave: true
+        });
+      });
+    } catch (e) {
+      console.error("Could not load saved thoughts:", e);
+    }
+    updateStats();
+  }
+
+  function updateMoodUI() {
+    const theme = moodThemes[moodSelect.value];
+    document.documentElement.style.setProperty("--bg1", theme.bg1);
+    document.documentElement.style.setProperty("--bg2", theme.bg2);
+    currentMood.textContent = moodSelect.options[moodSelect.selectedIndex].text;
+    saveState();
+  }
+
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function randomChoice(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function createBubble(text, opts = {}) {
+    const theme = moodThemes[opts.mood || moodSelect.value];
+    const size = opts.r || (Math.random() * 95 + 78) * dpr;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble fade-in";
+    bubble.style.width = size + "px";
+    bubble.style.height = size + "px";
+    bubble.style.left = (opts.x ?? Math.random() * (w - size)) + "px";
+    bubble.style.top = (opts.y ?? (h - size - 20 * dpr)) + "px";
+    bubble.style.background = opts.color || `rgba(76,201,240,${0.16 + Math.random() * 0.12})`;
+    bubble.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + "s";
+    bubble.style.animationName = "pulse";
+
+    const textEl = document.createElement("div");
+    textEl.className = "text";
+    textEl.textContent = text;
+
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    tag.textContent = opts.mood || moodSelect.value;
+
+    bubble.appendChild(textEl);
+    bubble.appendChild(tag);
+
+    const obj = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+      el: bubble,
+      text,
+      x: parseFloat(bubble.style.left),
+      y: parseFloat(bubble.style.top),
+      r: size,
+      vx: opts.vx ?? ((Math.random() - 0.5) * 0.35 * dpr),
+      vy: opts.vy ?? (-(Math.random() * 0.25 + 0.12) * dpr),
+      revealed: !!opts.revealed,
+      frozen: !!opts.frozen,
+      color: opts.color || bubble.style.background,
+      mood: opts.mood || moodSelect.value
+    };
+
+    function renderText() {
+      bubble.classList.toggle("revealed", obj.revealed);
+      bubble.classList.toggle("hidden-text", !obj.revealed);
+      textEl.textContent = obj.revealed ? obj.text : "…";
+      tag.textContent = obj.mood;
+    }
+
+    renderText();
+
+    bubble.addEventListener("click", (e) => {
+      e.stopPropagation();
+      obj.revealed = !obj.revealed;
+      renderText();
+      saveState();
+    });
+
+    bubble.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      obj.frozen = !obj.frozen;
+      bubble.classList.toggle("frozen", obj.frozen);
+      saveState();
+    });
+
+    bubble.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      removeBubble(obj.id);
+    });
+
+    document.body.appendChild(bubble);
+    obj.renderText = renderText;
+    bubbles.push(obj);
+
+    if (!opts.skipSave) saveState();
+    updateStats();
+    return obj;
+  }
+
+  function removeBubble(id) {
+    const index = bubbles.findIndex(b => b.id === id);
+    if (index >= 0) {
+      bubbles[index].el.remove();
+      bubbles.splice(index, 1);
+      saveState();
+    }
+  }
+
+  function addCurrentThought() {
+    const txt = input.value.trim();
+    if (!txt) return;
+    createBubble(txt, { mood: moodSelect.value });
+    input.value = "";
+    input.focus();
+  }
+
+  function createAutoThought() {
+    const text = randomChoice(autoThoughts);
+    const moods = Object.keys(moodThemes);
+    const mood = randomChoice(moods);
+    createBubble(text, { mood });
+  }
+
+  function clearAll() {
+    bubbles.forEach(b => b.el.remove());
+    bubbles = [];
+    localStorage.removeItem(storageKey);
+    updateStats();
+  }
+
+  function updateStats() {
+    totalCount.textContent = bubbles.length;
+    revealedCount.textContent = bubbles.filter(b => b.revealed).length;
+    hiddenCount.textContent = bubbles.filter(b => !b.revealed).length;
+    currentMood.textContent = moodSelect.options[moodSelect.selectedIndex].text;
+  }
+
+  function drawBackground() {
+    ctx.clearRect(0, 0, w, h);
+
+    const theme = moodThemes[moodSelect.value];
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, theme.bg1);
+    grad.addColorStop(1, theme.bg2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // soft lights
+    const glows = [
+      { x: w * 0.2, y: h * 0.18, r: Math.min(w, h) * 0.28, c: "rgba(76,201,240,0.08)" },
+      { x: w * 0.75, y: h * 0.25, r: Math.min(w, h) * 0.22, c: "rgba(255,255,255,0.05)" },
+      { x: w * 0.5, y: h * 0.68, r: Math.min(w, h) * 0.35, c: "rgba(139,92,246,0.06)" }
+    ];
+
+    for (const g of glows) {
+      const rg = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
+      rg.addColorStop(0, g.c);
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // stars
+    stars.forEach(s => {
+      s.y += s.v;
+      if (s.y > h + 10) {
+        s.y = -10;
+        s.x = Math.random() * w;
+      }
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // waves
+    waveOffset += 0.012;
+    for (let i = 0; i < 4; i++) {
+      const yBase = h * 0.7 + i * 28 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, yBase);
+
+      for (let x = 0; x <= w; x += 24 * dpr) {
+        const wave =
+          Math.sin(x * 0.004 + waveOffset + i) * (8 + i * 3) * dpr +
+          Math.cos(x * 0.009 + waveOffset * 1.6) * (4 + i) * dpr;
+        ctx.lineTo(x, yBase + wave);
+      }
+
+      ctx.strokeStyle = `rgba(255,255,255,${0.08 - i * 0.01})`;
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.stroke();
+    }
+  }
+
+  function animate() {
+    drawBackground();
+
+    bubbles.forEach(b => {
+      if (!b.frozen) {
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // gentle drift
+        b.vx += Math.sin((b.y / h) * 2 + waveOffset) * 0.001 * dpr;
+        b.vy -= 0.0018 * dpr;
+
+        // boundaries
+        if (b.x < -b.r * 0.1) b.vx = Math.abs(b.vx);
+        if (b.x > w - b.r) b.vx = -Math.abs(b.vx);
+        if (b.y < -b.r) {
+          b.y = h + b.r * 0.15;
+          b.x = Math.random() * w;
+        }
+
+        // mouse attraction
+        if (mouse.active) {
+          const dx = mouse.x - (b.x + b.r / 2);
+          const dy = mouse.y - (b.y + b.r / 2);
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          if (dist < 260 * dpr) {
+            b.x += dx * 0.0012;
+            b.y += dy * 0.0012;
+          }
+        }
+      }
+
+      b.el.style.left = `${b.x / dpr}px`;
+      b.el.style.top = `${b.y / dpr}px`;
+      b.el.style.width = `${b.r / dpr}px`;
+      b.el.style.height = `${b.r / dpr}px`;
+      b.el.querySelector(".tag").style.opacity = b.revealed ? "0.9" : "0.65";
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  const mouse = { x: 0, y: 0, active: false };
+  window.addEventListener("mousemove", (e) => {
+    mouse.x = e.clientX * dpr;
+    mouse.y = e.clientY * dpr;
+    mouse.active = true;
+  });
+  window.addEventListener("mouseleave", () => {
+    mouse.active = false;
+  });
+
+  addBtn.addEventListener("click", addCurrentThought);
+  autoBtn.addEventListener("click", createAutoThought);
+  clearBtn.addEventListener("click", clearAll);
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addCurrentThought();
+  });
+
+  moodSelect.addEventListener("change", updateMoodUI);
+
+  // click background to create a random bubble from current input or auto thought
+  canvas.addEventListener("click", (e) => {
+    const text = input.value.trim() || randomChoice(autoThoughts);
+    createBubble(text, {
+      x: e.clientX * dpr - 50 * dpr,
+      y: e.clientY * dpr - 50 * dpr,
+      mood: moodSelect.value
+    });
+  });
+
+  updateMoodUI();
+  loadState();
+
+  if (bubbles.length === 0) {
+    createBubble("Your thoughts can float or sink.", { mood: "calm" });
+    createBubble("Some thoughts stay hidden until touched.", { mood: "deep", revealed: false });
+    createBubble("The sea remembers everything.", { mood: "dream" });
+  }
+
+  setInterval(() => {
+    if (bubbles.length < 28) {
+      createAutoThought();
+    }
+  }, 6500);
+
+  setInterval(() => {
+    if (Math.random() < 0.35 && bubbles.length < 34) {
+      createAutoThought();
+    }
+  }, 12000);
+
+  animate();
+</script>
+</body>
+</html>
